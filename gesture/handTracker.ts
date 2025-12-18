@@ -5,6 +5,7 @@ const CAMERA_JS = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_u
 
 let camera: any = null;
 let hands: any = null;
+let reconnectTimeout: any = null;
 
 export const startHandTracking = async (
   videoElement: HTMLVideoElement,
@@ -18,43 +19,77 @@ export const startHandTracking = async (
     document.head.appendChild(s);
   });
 
-  try {
-    if (!(window as any).Hands) await loadScript(HANDS_JS);
-    if (!(window as any).Camera) await loadScript(CAMERA_JS);
+  let lastFrameTime = 0;
+  const targetFPS = 20;
+  const frameInterval = 1000 / targetFPS;
 
-    // @ts-ignore
-    hands = new window.Hands({
-      locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
+  const init = async () => {
+    try {
+      if (!(window as any).Hands) await loadScript(HANDS_JS);
+      if (!(window as any).Camera) await loadScript(CAMERA_JS);
 
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.7
-    });
+      // @ts-ignore
+      hands = new window.Hands({
+        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
 
-    hands.onResults(onResults);
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7, // Milestone requirement
+        minTrackingConfidence: 0.5  // Milestone requirement
+      });
 
-    // @ts-ignore
-    camera = new window.Camera(videoElement, {
-      onFrame: async () => {
-        await hands.send({ image: videoElement });
-      },
-      width: 640,
-      height: 480
-    });
+      hands.onResults(onResults);
 
-    await camera.start();
-    return true;
-  } catch (err) {
-    console.error('Hand tracker initialization failed', err);
-    onError(err);
-    return false;
-  }
+      // @ts-ignore
+      camera = new window.Camera(videoElement, {
+        onFrame: async () => {
+          const now = performance.now();
+          if (now - lastFrameTime >= frameInterval) {
+            lastFrameTime = now;
+            try {
+              await hands.send({ image: videoElement });
+            } catch (e) {
+              console.warn("Hand processing dropped a frame");
+            }
+          }
+        },
+        width: 640,
+        height: 480
+      });
+
+      await camera.start();
+      return true;
+    } catch (err) {
+      console.error('Hand tracker initialization failed', err);
+      onError(err);
+      
+      // Attempt reconnection once after 3 seconds if it fails initially
+      if (!reconnectTimeout) {
+        reconnectTimeout = setTimeout(() => {
+          console.log("Attempting camera reconnection...");
+          init();
+        }, 3000);
+      }
+      return false;
+    }
+  };
+
+  return await init();
 };
 
 export const stopHandTracking = () => {
-  if (camera) camera.stop();
-  if (hands) hands.close();
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+  if (camera) {
+    try { camera.stop(); } catch (e) {}
+    camera = null;
+  }
+  if (hands) {
+    try { hands.close(); } catch (e) {}
+    hands = null;
+  }
 };
