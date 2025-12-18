@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import { ThreeScene } from './components/ThreeScene';
 import { UiPanel } from './components/UiPanel';
 import { startHandTracking, stopHandTracking } from './gesture/handTracker';
@@ -84,21 +84,23 @@ const App: React.FC = () => {
   return (
     <div className="app-container">
       <div className="scene-container">
-        <Suspense fallback={<div className="flex items-center justify-center w-full h-full text-white text-lg">Initializing Magic...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center w-full h-full text-white text-lg bg-black">Initializing Magic...</div>}>
           <Canvas 
             shadows 
             dpr={[1, 2]} 
-            camera={{ position: [0, 4, 18], fov: 45 }}
+            camera={{ position: [0, 2, 22], fov: 40 }}
             style={{ width: '100%', height: '100%' }}
           >
             <ThreeScene lightMode={lightMode} treeState={treeState} />
-            <EffectComposer>
+            <EffectComposer disableNormalPass>
               <Bloom 
-                luminanceThreshold={0.4} 
+                luminanceThreshold={0.2} 
                 mipmapBlur 
-                intensity={theme.bloomIntensity * 1.0} 
-                radius={0.3}
+                intensity={theme.bloomIntensity} 
+                radius={0.4}
               />
+              <Noise opacity={0.03} />
+              <Vignette eskil={false} offset={0.1} darkness={1.1} />
             </EffectComposer>
           </Canvas>
         </Suspense>
@@ -124,10 +126,10 @@ const App: React.FC = () => {
           </div>
         </div>
         
-        {/* Gesture Visualizer */}
+        {/* Gesture Visualizer Overlay */}
         {gesture !== GestureType.NONE && (
            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 select-none">
-              <div className="text-[12rem] opacity-20 animate-pulse transition-all filter blur-[1px]">
+              <div className="text-[12rem] opacity-10 animate-ping transition-all filter blur-[2px]">
                 {gesture === GestureType.OK_SIGN ? '👌' : gesture === GestureType.OPEN_HAND ? '✋' : '✊'}
               </div>
            </div>

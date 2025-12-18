@@ -1,23 +1,26 @@
 
 import { LightMode } from './types';
 
-export const PARTICLE_COUNT = 8000;
-export const SNOW_COUNT = 800;
+export const PARTICLE_COUNT = 20000;
+export const SNOW_COUNT = 1200;
 
-export const THEMES: Record<LightMode, { color: string; background: string; bloomIntensity: number }> = {
+export const THEMES: Record<LightMode, { color: string; background: string; bloomIntensity: number; secondaryColor: string }> = {
   [LightMode.WARM]: {
-    color: '#ffaa33',
-    background: '#1a0f00',
-    bloomIntensity: 1.5,
+    color: '#ffaa33', // Golden
+    secondaryColor: '#ff4400', // Orange-red
+    background: '#0d0800',
+    bloomIntensity: 2.5,
   },
   [LightMode.ICE]: {
-    color: '#88ccff',
-    background: '#000a1a',
-    bloomIntensity: 1.2,
+    color: '#ffffff', // White
+    secondaryColor: '#00ccff', // Cyan-blue
+    background: '#00050d',
+    bloomIntensity: 1.8,
   },
   [LightMode.NEON]: {
-    color: '#ff00ff',
-    background: '#0a000a',
-    bloomIntensity: 2.2,
+    color: '#00ffff', // Cyan
+    secondaryColor: '#ff00ff', // Magenta
+    background: '#050005',
+    bloomIntensity: 3.5,
   }
 };
