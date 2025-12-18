@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import { ThreeScene } from './components/ThreeScene';
 import { UiPanel } from './components/UiPanel';
 import { startHandTracking, stopHandTracking } from './gesture/handTracker';
@@ -112,8 +111,6 @@ const App: React.FC = () => {
     }
   };
 
-  const theme = THEMES[lightMode];
-
   return (
     <div className="app-container">
       <div className="scene-container">
@@ -125,16 +122,6 @@ const App: React.FC = () => {
             style={{ width: '100%', height: '100%' }}
           >
             <ThreeScene lightMode={lightMode} treeState={treeState} />
-            <EffectComposer disableNormalPass>
-              <Bloom 
-                luminanceThreshold={0.15} 
-                mipmapBlur 
-                intensity={theme.bloomIntensity} 
-                radius={0.5}
-              />
-              <Noise opacity={0.02} />
-              <Vignette eskil={false} offset={0.1} darkness={1.05} />
-            </EffectComposer>
           </Canvas>
         </Suspense>
 

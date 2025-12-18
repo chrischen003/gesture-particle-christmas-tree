@@ -10,7 +10,6 @@ interface ParticleTreeProps {
   lightMode: LightMode;
 }
 
-// Cubic Easing function for smoother transitions
 const easeInOutCubic = (x: number): number => {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 };
@@ -27,53 +26,56 @@ const ParticleTree: React.FC<ParticleTreeProps> = ({ treeState, lightMode }) => 
 
     const layers = 12;
     const trunkParticles = Math.floor(PARTICLE_COUNT * 0.12);
-    const starParticles = 250;
+    const starParticles = 300;
     const branchParticles = PARTICLE_COUNT - trunkParticles - starParticles;
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       let tx, ty, tz;
       let r, g, b;
-      let size = 0.08 + Math.random() * 0.12;
+      let size = 0.07 + Math.random() * 0.1;
 
       if (i < trunkParticles) {
-        // Trunk
+        // Trunk - Subtle dark tones
         const h = Math.random() * 5 - 8.5;
-        const rad = Math.random() * 0.7;
+        const rad = Math.random() * 0.75;
         const ang = Math.random() * Math.PI * 2;
         tx = Math.cos(ang) * rad;
         ty = h;
         tz = Math.sin(ang) * rad;
-        r = 0.08; g = 0.15; b = 0.04;
-        size *= 0.7;
+        r = 0.05; g = 0.1; b = 0.02;
+        size *= 0.6;
       } else if (i < trunkParticles + starParticles) {
-        // Star
-        const sSize = 0.9;
+        // Star - High intensity for Bloom
+        const sSize = 1.0;
         tx = (Math.random() - 0.5) * sSize;
-        ty = 8 + (Math.random() - 0.5) * sSize;
+        ty = 8.2 + (Math.random() - 0.5) * sSize;
         tz = (Math.random() - 0.5) * sSize;
-        r = 1.0; g = 1.0; b = 0.9;
-        size *= 2.8;
+        // Over-bright white/yellow to trigger bloom
+        r = 2.5; g = 2.2; b = 1.2; 
+        size *= 3.5;
       } else {
         // Branches
         const branchIdx = i - (trunkParticles + starParticles);
         const layerIdx = Math.floor((branchIdx / branchParticles) * layers);
         const layerProgress = (layerIdx / layers);
         
-        const layerY = -6 + layerProgress * 13.5;
-        const maxRadius = (1.15 - layerProgress) * 6;
+        const layerY = -6.5 + layerProgress * 14.5;
+        const maxRadius = (1.1 - layerProgress) * 6.5;
         const angle = Math.random() * Math.PI * 2;
-        const spiralAngle = layerProgress * Math.PI * 12 + angle;
-        const dist = Math.pow(Math.random(), 0.65) * maxRadius;
+        const spiralAngle = layerProgress * Math.PI * 14 + angle;
+        const dist = Math.pow(Math.random(), 0.7) * maxRadius;
         
-        tx = Math.cos(spiralAngle) * dist + (Math.random() - 0.5) * 0.5;
-        ty = layerY + (Math.random() - 0.5) * 1.5;
-        tz = Math.sin(spiralAngle) * dist + (Math.random() - 0.5) * 0.5;
+        tx = Math.cos(spiralAngle) * dist + (Math.random() - 0.5) * 0.6;
+        ty = layerY + (Math.random() - 0.5) * 1.6;
+        tz = Math.sin(spiralAngle) * dist + (Math.random() - 0.5) * 0.6;
         
-        r = 0.0; g = 0.25 + (1 - layerProgress) * 0.45; b = 0.08;
+        // Base dark green
+        r = 0.01; g = 0.15 + (1 - layerProgress) * 0.3; b = 0.05;
         
-        if (Math.random() > 0.95) {
-          r = 1.0; g = 0.95; b = 0.4; // Decorative lights
-          size *= 2.2;
+        // Glowy decorative lights
+        if (Math.random() > 0.96) {
+          r = 1.8; g = 1.5; b = 0.5; // Over-bright lights
+          size *= 2.5;
         }
       }
 
@@ -81,8 +83,7 @@ const ParticleTree: React.FC<ParticleTreeProps> = ({ treeState, lightMode }) => 
       tree[i * 3 + 1] = ty;
       tree[i * 3 + 2] = tz;
 
-      // Cloud - random explosion sphere
-      const distC = 10 + Math.random() * 25;
+      const distC = 12 + Math.random() * 28;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.random() * Math.PI;
       cloud[i * 3] = distC * Math.sin(phi) * Math.cos(theta);
@@ -106,15 +107,13 @@ const ParticleTree: React.FC<ParticleTreeProps> = ({ treeState, lightMode }) => 
     if (!pointsRef.current) return;
     const attrPos = pointsRef.current.geometry.attributes.position;
     
-    // Manage transition progress
     const targetProgress = treeState === TreeState.GROWING ? 1 : 0;
     transitionProgress.current = THREE.MathUtils.lerp(
       transitionProgress.current, 
       targetProgress, 
-      delta * 2 // Speed of transition
+      delta * 1.8
     );
 
-    // Use eased factor for the actual position interpolation
     const easedFactor = easeInOutCubic(transitionProgress.current);
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -125,17 +124,16 @@ const ParticleTree: React.FC<ParticleTreeProps> = ({ treeState, lightMode }) => 
     }
     attrPos.needsUpdate = true;
 
-    // Theming & Pulse
     const theme = THEMES[lightMode];
     colorObj.set(theme.color);
     secColorObj.set(theme.secondaryColor);
     
     const mat = pointsRef.current.material as THREE.PointsMaterial;
-    const t = (Math.sin(state.clock.elapsedTime * 0.8) + 1) / 2;
-    mat.color.lerpColors(colorObj, secColorObj, t);
+    const flicker = Math.sin(state.clock.elapsedTime * 4) * 0.1 + 0.9;
+    const themeTransition = (Math.sin(state.clock.elapsedTime * 0.6) + 1) / 2;
     
-    const pulse = 0.85 + Math.sin(state.clock.elapsedTime * 3) * 0.15;
-    mat.opacity = (0.4 + 0.3 * easedFactor) * pulse;
+    mat.color.lerpColors(colorObj, secColorObj, themeTransition).multiplyScalar(flicker);
+    mat.opacity = (0.5 + 0.3 * easedFactor) * (0.8 + Math.sin(state.clock.elapsedTime * 2) * 0.2);
   });
 
   return (
@@ -145,7 +143,7 @@ const ParticleTree: React.FC<ParticleTreeProps> = ({ treeState, lightMode }) => 
         <bufferAttribute attach="attributes-color" count={PARTICLE_COUNT} array={shapes.colors} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial 
-        size={0.16} 
+        size={0.15} 
         vertexColors 
         transparent 
         opacity={0.8} 
