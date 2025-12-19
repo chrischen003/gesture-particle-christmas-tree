@@ -7,10 +7,9 @@ import { startHandTracking, stopHandTracking } from './gesture/handTracker';
 import { detectGesture, GestureType, GestureResult } from './gesture/gestureEngine';
 import { TreeState, LightMode, Language } from './types';
 import { getDefaultLanguage } from './i18n';
-import { THEMES } from './constants';
 import './styles.css';
 
-const DEBOUNCE_TIME = 400; // ms to stabilize a gesture
+const DEBOUNCE_TIME = 400; 
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>(getDefaultLanguage());
@@ -22,7 +21,6 @@ const App: React.FC = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Debouncing refs
   const currentTargetRef = useRef<GestureType>(GestureType.NONE);
   const startTimeRef = useRef<number>(0);
   const activeGestureRef = useRef<GestureType>(GestureType.NONE);
@@ -34,10 +32,8 @@ const App: React.FC = () => {
 
       const now = Date.now();
       
-      // If detected gesture matches our current target, check if we've held it long enough
       if (result.type === currentTargetRef.current && result.type !== GestureType.NONE) {
         if (now - startTimeRef.current > DEBOUNCE_TIME) {
-          // Stabilization complete! Trigger logic if it's a new gesture
           if (result.type !== activeGestureRef.current) {
             activeGestureRef.current = result.type;
             setGesture(result.type);
@@ -45,12 +41,9 @@ const App: React.FC = () => {
           }
         }
       } else {
-        // Target changed, reset timer
         currentTargetRef.current = result.type;
         startTimeRef.current = now;
         
-        // If it's NONE, we can immediately reflect that in visual state, 
-        // but wait for stabilization for action triggers
         if (result.type === GestureType.NONE) {
           activeGestureRef.current = GestureType.NONE;
           setGesture(GestureType.NONE);
@@ -114,7 +107,7 @@ const App: React.FC = () => {
   return (
     <div className="app-container">
       <div className="scene-container">
-        <Suspense fallback={<div className="flex items-center justify-center w-full h-full text-white text-lg bg-black">Initializing Magic...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center w-full h-full text-white text-lg bg-black">Preparing the Magic...</div>}>
           <Canvas 
             shadows 
             dpr={[1, 2]} 
@@ -125,31 +118,31 @@ const App: React.FC = () => {
           </Canvas>
         </Suspense>
 
-        {/* Video Feedback Area */}
-        <div className="absolute bottom-4 right-4 z-20">
-          <div className="relative w-36 h-28 rounded-2xl border border-white/20 overflow-hidden shadow-2xl bg-black/40 backdrop-blur ring-1 ring-white/10">
+        {/* Floating Video Preview */}
+        <div className="absolute bottom-6 right-6 z-20">
+          <div className="relative w-40 h-30 rounded-2xl border border-white/20 overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)] bg-black/40 backdrop-blur ring-1 ring-white/10 transition-transform hover:scale-105">
             <video 
               ref={videoRef} 
               className="w-full h-full object-cover scale-x-[-1]" 
               autoPlay playsInline muted 
             />
             {cameraStatus === 'loading' && (
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] bg-black/60 text-white animate-pulse">
-                AI INIT...
+              <div className="absolute inset-0 flex items-center justify-center text-[10px] bg-black/60 text-white animate-pulse font-mono tracking-tighter">
+                CALIBRATING AI...
               </div>
             )}
             {cameraStatus === 'denied' && (
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] bg-red-900/40 text-white text-center p-1">
-                CAM DENIED
+              <div className="absolute inset-0 flex items-center justify-center text-[10px] bg-red-900/40 text-white text-center p-2 font-bold">
+                CAM ACCESS BLOCKED
               </div>
             )}
           </div>
         </div>
         
-        {/* Gesture Visualizer Overlay */}
+        {/* Immersive Gesture Indicator */}
         {gesture !== GestureType.NONE && (
            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 select-none">
-              <div className="text-[14rem] opacity-20 animate-pulse transition-all filter blur-[1px]">
+              <div className="text-[16rem] opacity-10 animate-pulse transition-all filter blur-[2px] scale-110">
                 {gesture === GestureType.OK_SIGN ? '👌' : gesture === GestureType.OPEN_HAND ? '✋' : '✊'}
               </div>
            </div>
